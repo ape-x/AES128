@@ -25,6 +25,7 @@
 /* Begin PBXFileReference section */
 		B8F1E2392515613200F2D50E /* AES */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = AES; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8F1E23C2515613200F2D50E /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		B8F1E2442515614600F2D50E /* README */ = {isa = PBXFileReference; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +59,7 @@
 			isa = PBXGroup;
 			children = (
 				B8F1E23C2515613200F2D50E /* main.c */,
+				B8F1E2442515614600F2D50E /* README */,
 			);
 			path = AES;
 			sourceTree = "<group>";
