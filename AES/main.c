@@ -13,7 +13,7 @@
 #include <string.h>
 
 
- unsigned char sBox[] = {
+ uint8_t sBox[] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
        0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
        0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0,
@@ -48,7 +48,7 @@
        0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 };
 
-unsigned char inv_sBox [16][16] =  {
+uint8_t inv_sBox [16][16] =  {
    0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38,
    0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
    0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87,
@@ -82,7 +82,7 @@ unsigned char inv_sBox [16][16] =  {
    0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26,
     0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d, };
 
-unsigned char mul2[] =
+uint8_t mul2[] =
 {
     0x00,0x02,0x04,0x06,0x08,0x0a,0x0c,0x0e,0x10,0x12,0x14,0x16,0x18,0x1a,0x1c,0x1e,
     0x20,0x22,0x24,0x26,0x28,0x2a,0x2c,0x2e,0x30,0x32,0x34,0x36,0x38,0x3a,0x3c,0x3e,
@@ -102,7 +102,7 @@ unsigned char mul2[] =
     0xfb,0xf9,0xff,0xfd,0xf3,0xf1,0xf7,0xf5,0xeb,0xe9,0xef,0xed,0xe3,0xe1,0xe7,0xe5
 };
 
-unsigned char mul3[] =
+uint8_t mul3[] =
 {
     0x00,0x03,0x06,0x05,0x0c,0x0f,0x0a,0x09,0x18,0x1b,0x1e,0x1d,0x14,0x17,0x12,0x11,
     0x30,0x33,0x36,0x35,0x3c,0x3f,0x3a,0x39,0x28,0x2b,0x2e,0x2d,0x24,0x27,0x22,0x21,
@@ -123,112 +123,84 @@ unsigned char mul3[] =
 };
 
 
-unsigned char rcon[10][4] =
+uint8_t rcon[10][4] =
 {
     0x01,0,0,0,0x02,0,0,0, 0x04,0,0,0, 0x08,0,0,0, 0x10,0,0,0, 0x20,0,0,0, 0x40,0,0,0, 0x80,0,0,0, 0x1b,0,0,0, 0x36,0,0,0
 };
 
-
-inline static void subBytes(unsigned char** state){
+inline static void subBytes(uint8_t* state){
     for(int i=0;i<4;i++){
-        state[i][0] = sBox[state[i][0]];
-        state[i][1] = sBox[state[i][1]];
-        state[i][2] = sBox[state[i][2]];
-        state[i][3] = sBox[state[i][3]];
-
+        state[i*4] = sBox[state[i*4]];
+        state[i*4+1] = sBox[state[i*4+1]];
+        state[i*4+2] = sBox[state[i*4+2]];
+        state[i*4+3] = sBox[state[i*4+3]];
     }
 }
 
+inline static void shiftRows(uint8_t* state){ // Looks like crap but it's faster than a crab
+    uint8_t swap;
+    swap = state[4];
+    state[4] = state[5];
+    state[5] = state[6];
+    state[6] = state[7];
+    state[7] = swap;
+    swap = state[15];
+    state[15] = state[14];
+    state[14] = state[13];
+    state[13] = state[12];
+    state[12] = swap;
+    (void)(state[8]^=state[10]), (void)(state[10]^=state[8]), state[8]^=state[10];
+    (void)(state[9]^=state[11]), (void)(state[11]^=state[9]), state[9]^=state[11];
+}
 
- inline static void shiftRows(unsigned char** state){
+inline static void mixColumns(uint8_t* state){
+    uint8_t s[4];
     for(int i=0;i<4;i++){
-        for(int j=0;j<i;j++){
-            int first = state[i][0];
-            for(int k = 0;k<3;k++){
-                state[i][k] = state[i][k+1];
-            }
-            state[i][3] = first;
-        }
+       s[0] = (uint8_t) (mul2[state[i]] ^ mul3[state[i+4]] ^ state[i+8] ^ state[i+12]);
+       s[1] = (uint8_t) (state[i] ^ mul2[state[i+4]] ^ mul3[state[i+8]] ^ state[i+12]);
+       s[2] = (uint8_t) (state[i] ^ state[i+4] ^ mul2[state[i+8]] ^ mul3[state[i+12]]);
+       s[3] = (uint8_t) (mul3[state[i]] ^ state[i+4] ^ state[i+8] ^ mul2[state[i+12]]);
+        state[i] = s[0];
+        state[i+4] = s[1];
+        state[i+8] = s[2];
+        state[i+12] = s[3];
     }
 }
 
-inline static void mixColumns(unsigned char** state){
-    unsigned char s[4];
+inline static void addRoundKey(uint8_t* state, uint8_t* roundKey){
     for(int i=0;i<4;i++){
-       s[0] = (unsigned char) (mul2[state[0][i]] ^ mul3[state[1][i]] ^ state[2][i] ^ state[3][i]);
-       s[1] = (unsigned char) (state[0][i] ^ mul2[state[1][i]] ^ mul3[state[2][i]] ^ state[3][i]);
-       s[2] = (unsigned char) (state[0][i] ^ state[1][i] ^ mul2[state[2][i]] ^ mul3[state[3][i]]);
-       s[3] = (unsigned char) (mul3[state[0][i]] ^ state[1][i] ^ state[2][i] ^ mul2[state[3][i]]);
-        for(int j=0;j<4;j++){
-            state[j][i] = s[j];
-        }
+        state[i*4]^=roundKey[i*4];
+        state[i*4+1]^=roundKey[i*4+1];
+        state[i*4+2]^=roundKey[i*4+2];
+        state[i*4+3]^=roundKey[i*4+3];
     }
 }
 
-inline static void addRoundKey(unsigned char** state, unsigned char** roundKey){
-    for(int i=0;i<4;i++){
-        state[i][0]^=roundKey[i][0];
-        state[i][1]^=roundKey[i][1];
-        state[i][2]^=roundKey[i][2];
-        state[i][3]^=roundKey[i][3];
+ static void keySchedule(uint8_t* key, int round){
+    uint8_t first = key[3];
+    uint8_t arr[4] = {key[3], key[7], key[11], key[15]};
+    for(int i=0;i<3;i++){
+        arr[i] = sBox[arr[i+1]];
     }
-}
-
- static void keySchedule(unsigned char** key, int round){
-     unsigned char w[4][4];
-     unsigned char first = key[0][3];
-     unsigned char arr[4];
-     
-     for(int i=0;i<4;i++){
-         arr[i] = key[i][3];
-     }
-     for(int i=0;i<3;i++){
-         arr[i] = sBox[arr[i+1]];
-     }
-     arr[3] = sBox[first];
-     for(int i=0;i<4;i++){
-         w[i][0] = key[i][0] ^ arr[i] ^ rcon[round][i];
-     }
-     for(int i=1;i<4;i++){
-         w[0][i] = key[0][i] ^ w[0][i-1];
-         w[1][i] = key[1][i] ^ w[1][i-1];
-         w[2][i] = key[2][i] ^ w[2][i-1];
-         w[3][i] = key[3][i] ^ w[3][i-1];
-     }
-     for(int i=0;i<4;i++){
-         for(int j=0;j<4;j++){
-             key[i][j] = w[i][j];
-         }
-     }
+    arr[3] = sBox[first];
+    for(int i=0;i<4;i++){
+        key[i*4] = key[i*4] ^ arr[i] ^ rcon[round][i];
+    }
+    for(int i=1;i<4;i++){
+        key[i] = key[i] ^ key[i-1];
+        key[i+4] = key[i+4] ^ key[i+3];
+        key[i+8] = key[i+8] ^ key[i+7];
+        key[i+12] = key[i+12] ^ key[i+11];
+    }
  }
 
- void encryption(unsigned char* Text,unsigned char Key[]){
-    unsigned char** key;
-    unsigned char** state;
-     unsigned char* output;
-     
-    state = (unsigned char**)malloc((strlen((char*)Text)/4)*sizeof(unsigned char));
-    key = (unsigned char**)malloc(4*sizeof(unsigned char));
-     for(int i=0;i<4;i++){
-         key[i] = (unsigned char*)malloc(4*sizeof(unsigned char));
-     }
-    for(int i=0;i<4;i++){
-        state[i] = (unsigned char*)malloc((strlen((char*)Text)/4)*sizeof(unsigned char));
+
+void encryption(uint8_t* state,uint8_t* encryption_key){
+    uint8_t key[16] ;
+    for(int i=0;i<16;i++){
+        key[i] = encryption_key[i];
     }
-    
-     for(int i=0;i<4;i++){
-         for(int j=0;j<4;j++){
-             key[j][i] = Key[i+4*j];
-         }
-     }
-    for(int i =0;i<4;i++){
-        for(int j=0;j<4;j++){
-            state[j][i] = Text[i+4*j];
-        }
-    }
-     
     addRoundKey(state, key);
-     
     for(int i=0;i<9;i++){
     subBytes(state);
     shiftRows(state);
@@ -236,48 +208,8 @@ inline static void addRoundKey(unsigned char** state, unsigned char** roundKey){
     keySchedule(key, i);
     addRoundKey(state, key);
      }
-     
      subBytes(state);
      shiftRows(state);
-     keySchedule(key, 9);
-     addRoundKey(state, key);
-     
-    output = (unsigned char*)malloc(strlen((char*)Text)*sizeof(unsigned char));
-    for(int i=0;i<4;i++){
-        for(int j=0;j<4;j++){
-            output[i+4*j] = state[i][j];
-        }
-    }
-    printf("\nPlain text \n");
-     for(int i=0;i<16;i++){
-         printf("%x ", Text[i] & 0xff);
-     }
-    printf("\nCipher text \n");
-    for(int i=0;i<16;i++){
-        printf("%x ", output[i] & 0xff);
-    }
-    free(output);
-    free(state);
+    keySchedule(key, 9);
+    addRoundKey(state, key);
 }
-
-
-int main(int argc, const char * argv[]) {
-    
-    unsigned char text[]={
-        0x32, 0x88, 0x31, 0xe0,
-        0x43, 0x5a, 0x31, 0x37,
-        0xf6, 0x30, 0x98, 0x07,
-        0xa8, 0x8d, 0xa2, 0x34
-    };
-    unsigned char key[] =
-    {0x2b, 0x28, 0xab, 0x09,
-     0x7e, 0xae, 0xf7, 0xcf,
-     0x15, 0xd2, 0x15, 0x4f,
-     0x16, 0xa6, 0x88 ,0x3c
-    };
-    
-    encryption(text, key);
-    return 0;
-}
-
-
