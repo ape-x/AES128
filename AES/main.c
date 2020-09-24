@@ -28,7 +28,7 @@ uint8_t rcon[10][4] =
     0x36,0,0,0
 };
 
-uint8_t expandKey[10][16];
+uint8_t expandedKey[10][16];
 
 inline static void subBytes(uint8_t* state){
     for(int i=0;i<4;i++){
@@ -110,7 +110,7 @@ inline static void invMixColumns(uint8_t* state){
     }
 }
 
-inline static void addRoundKey(uint8_t* state, uint8_t* roundKey){
+ inline static void addRoundKey(uint8_t* state, uint8_t* roundKey){
     for(int i=0;i<4;i++){
         state[i*4]^=roundKey[i*4];
         state[i*4+1]^=roundKey[i*4+1];
@@ -118,8 +118,6 @@ inline static void addRoundKey(uint8_t* state, uint8_t* roundKey){
         state[i*4+3]^=roundKey[i*4+3];
     }
 }
-
-
 
  static void keySchedule(uint8_t* key, int round){
     uint8_t first = key[3];
@@ -147,46 +145,30 @@ void keyExpansion(uint8_t* key){
     for(int i=0;i<10;i++){
     keySchedule(k, i);
         for(int j=0;j<16;j++){
-            expandKey[i][j] = k[j];
+            expandedKey[i][j] = k[j];
         }
     }
 }
 
-
-void print(uint8_t* array){
-    for(int i=0;i<16;i++){
-        printf("%x " , array[i] & 0xff);
-    }
-    printf("\n");
-}
-
-
-void encryption(uint8_t* state,uint8_t encryption_key[16]){
-    uint8_t key[16] ;
-    for(int i=0;i<16;i++){
-        key[i] = encryption_key[i];
-    }
-    addRoundKey(state, key);
+void encryptBlock(uint8_t* state, uint8_t* encryption_key){
+    addRoundKey(state, encryption_key);
     for(int i=0;i<9;i++){
     subBytes(state);
     shiftRows(state);
     mixColumns(state);
-    keySchedule(key, i);
-    addRoundKey(state, key);
+    addRoundKey(state, &expandedKey[i]);
      }
      subBytes(state);
      shiftRows(state);
-    keySchedule(key, 9);
-    addRoundKey(state, key);
+    addRoundKey(state, expandedKey[9]);
 }
 
-void decryption(uint8_t *state, uint8_t* encryption_key){
-    keyExpansion(encryption_key);
-    addRoundKey(state, &expandKey[9]);
+void decryptBlock(uint8_t *state, uint8_t* encryption_key){
+    addRoundKey(state, &expandedKey[9]);
     for(int i = 8;i>=0;i--){
         invShiftRows(state);
         invSubBytes(state);
-        addRoundKey(state, &expandKey[i]);
+        addRoundKey(state, &expandedKey[i]);
         invMixColumns(state);
     }
     invShiftRows(state);
@@ -194,3 +176,22 @@ void decryption(uint8_t *state, uint8_t* encryption_key){
     addRoundKey(state, encryption_key);
 }
 
+void encryption(uint8_t *text, uint8_t* encryption_key, int bytes){
+    keyExpansion(encryption_key);
+    uint8_t* blockCounter;
+    int blocks = bytes/16;
+    for(int i=0;i<blocks;i++){
+        blockCounter=&text[i*16];
+        encryptBlock(blockCounter, encryption_key);
+    }
+}
+
+void decryption(uint8_t *text, uint8_t* encryption_key, int bytes){
+    keyExpansion(encryption_key);
+    uint8_t* blockCounter;
+    int blocks = bytes/16;
+    for(int i=0;i<blocks;i++){
+        blockCounter=&text[i*16];
+        decryptBlock(blockCounter, encryption_key);
+    }
+}

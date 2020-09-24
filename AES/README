@@ -6,5 +6,4 @@ NIST(National Institute of Standards and Technology) - Advanced Encryption Stand
 link to NIST docs : https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197.pdf
 Vincent Rijmen, Joan Daemen - Design of Rijndael
 
- This implementation currently works on a single block for ENCRYPTION ONLY
- Will be implementing decryption functionality and multiple-blocks support.
+
