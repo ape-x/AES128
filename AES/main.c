@@ -11,24 +11,30 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/mount.h>
 #include "LookUpTables.h"
 
+#define BLOCK_SIZE 16 // 128 bit blocks
+#define KEY_SIZE 16 // 128 bit-long key
+
+uint8_t expandedKey[10][KEY_SIZE];
 
 uint8_t rcon[10][4] =
 {
-    0x01,0,0,0,
-    0x02,0,0,0,
-    0x04,0,0,0,
-    0x08,0,0,0,
-    0x10,0,0,0,
-    0x20,0,0,0,
-    0x40,0,0,0,
-    0x80,0,0,0,
-    0x1b,0,0,0,
-    0x36,0,0,0
+    0x01,	0,	0,	0,
+    0x02,	0,	0,	0,
+    0x04,	0,	0,	0,
+    0x08,	0,	0,	0,
+    0x10,	0,	0,	0,
+    0x20,	0,	0,	0,
+    0x40,	0,	0,	0,
+    0x80,	0,	0,	0,
+    0x1b,	0,	0,	0,
+    0x36,	0,	0,	0
 };
-
-uint8_t expandedKey[10][16];
 
 inline static void subBytes(uint8_t* state){
     for(int i=0;i<4;i++){
@@ -138,7 +144,7 @@ inline static void invMixColumns(uint8_t* state){
  }
 
 void keyExpansion(uint8_t* key){
-    uint8_t k[16];
+    uint8_t k[KEY_SIZE];
     for(int i=0;i<16;i++){
         k[i] = key[i];
     }
@@ -176,22 +182,97 @@ void decryptBlock(uint8_t *state, uint8_t* encryption_key){
     addRoundKey(state, encryption_key);
 }
 
-void encryption(uint8_t *text, uint8_t* encryption_key, int bytes){
+void encryption(uint8_t *text, uint8_t* encryption_key, long bytes){
+		uint8_t* blockCounter;
+		long blocks = bytes/BLOCK_SIZE;
     keyExpansion(encryption_key);
-    uint8_t* blockCounter;
-    int blocks = bytes/16;
     for(int i=0;i<blocks;i++){
-        blockCounter=&text[i*16];
+        blockCounter=&text[i*BLOCK_SIZE];
         encryptBlock(blockCounter, encryption_key);
     }
 }
 
-void decryption(uint8_t *text, uint8_t* encryption_key, int bytes){
+void decryption(uint8_t *text, uint8_t* encryption_key, long bytes){
+		uint8_t* blockCounter;
+		long blocks = bytes/BLOCK_SIZE;
     keyExpansion(encryption_key);
-    uint8_t* blockCounter;
-    int blocks = bytes/16;
-    for(int i=0;i<blocks;i++){
-        blockCounter=&text[i*16];
+		for(int i=0;i<blocks;i++){
+        blockCounter=&text[i*BLOCK_SIZE];
         decryptBlock(blockCounter, encryption_key);
     }
+}
+
+bool searchForFile(char* path, char* searchedItem){
+		FILE* checkFile;
+		printf("\nEnter path to %s", searchedItem);
+		scanf("%s", path);
+		if((checkFile = fopen(path, "r"))== NULL){
+				fclose(checkFile);
+				return false;
+		}
+		fclose(checkFile);
+		return true;
+}
+
+long getFileSize(char* fileName){
+		struct stat fSize;
+		stat(fileName, &fSize);
+		return fSize.st_size;
+}
+
+void cryptographicMotor(){
+
+		uint8_t padding = 0;
+		uint8_t *buffer;
+		uint8_t functionality;
+		FILE* fileReader;
+		char key[BLOCK_SIZE];
+		char outputName[20];
+		char filePath[PATH_MAX];
+		char keyPath[PATH_MAX];
+		long fileSize;
+		void (*controller[])(uint8_t*, uint8_t*, int) = {encryption, decryption};
+				
+		printf("\nSelect functionality\n1 - Encryption\n2 - Decryption\n");
+		scanf("%d", &functionality);
+
+		if(functionality != 1 && functionality != 2)
+				return;
+		
+		if(searchForFile(filePath, "file ") == false || // check if files exist
+			 searchForFile(keyPath, "key ") == false){
+				printf("\nFile does not exist or could not be opened");
+				return;
+		}
+		
+		fileReader = fopen(keyPath, "r");
+		fgets(key, KEY_SIZE, fileReader);
+		fclose(fileReader);
+		fileSize = getFileSize(filePath);
+		
+		if(fileSize % 16 != 0)
+				padding = (fileSize/BLOCK_SIZE+1)*16 - fileSize;
+		
+		buffer = (uint8_t*)malloc((fileSize+padding)*sizeof(uint8_t));
+		
+		if(buffer == NULL){
+				printf("Insufficient memory");
+				return;
+		}
+
+		for(long i = fileSize;i<fileSize+padding;i++)	// padding last block with white spaces
+				buffer[i] = 32;
+		
+		fileReader = fopen(filePath, "r");
+		fread(buffer, 1, fileSize, fileReader);
+		fclose(fileReader);
+
+		controller[functionality-1](buffer, key, fileSize+padding);
+		
+		printf("\nEnter name of output file ");
+		scanf("%s", &outputName);
+		
+		fileReader = fopen(outputName, "w");
+		fwrite(buffer, 1, fileSize+padding, fileReader);
+		fclose(fileReader);
 }
