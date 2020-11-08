@@ -202,16 +202,10 @@ void decryption(uint8_t *text, uint8_t* encryption_key, long bytes){
     }
 }
 
-bool searchForFile(char* path, char* searchedItem){
-		FILE* checkFile;
-		printf("\nEnter path to %s", searchedItem);
+FILE* searchForFilePlus(char* path, char* searchedItem){
+		printf("\nEnter path to %s\t", searchedItem);
 		scanf("%s", path);
-		if((checkFile = fopen(path, "r"))== NULL){
-				fclose(checkFile);
-				return false;
-		}
-		fclose(checkFile);
-		return true;
+		return fopen(path, "r");
 }
 
 long getFileSize(char* fileName){
@@ -226,6 +220,7 @@ void cryptographicMotor(){
 		uint8_t *buffer;
 		uint8_t functionality;
 		FILE* fileReader;
+		FILE* keyReader;
 		char key[BLOCK_SIZE];
 		char outputName[20];
 		char filePath[PATH_MAX];
@@ -239,19 +234,15 @@ void cryptographicMotor(){
 		if(functionality != 1 && functionality != 2)
 				return;
 		
-		if(searchForFile(filePath, "file ") == false || // check if files exist
-			 searchForFile(keyPath, "key ") == false){
+		if((fileReader = searchForFilePlus(filePath, "file ")) == NULL || // check if files exist
+			 (keyReader = searchForFilePlus(keyPath, "key ")) == NULL){
 				printf("\nFile does not exist or could not be opened");
 				return;
 		}
 		
-		fileReader = fopen(keyPath, "r");
-		fgets(key, KEY_SIZE, fileReader);
-		fclose(fileReader);
+		fgets(key, KEY_SIZE, keyReader);
+		fclose(keyReader);
 		fileSize = getFileSize(filePath);
-		
-		if(fileSize % 16 != 0)
-				padding = (fileSize/BLOCK_SIZE+1)*16 - fileSize;
 		
 		buffer = (uint8_t*)malloc((fileSize+padding)*sizeof(uint8_t));
 		
@@ -259,11 +250,13 @@ void cryptographicMotor(){
 				printf("Insufficient memory");
 				return;
 		}
-
-		for(long i = fileSize;i<fileSize+padding;i++)	// padding last block with white spaces
-				buffer[i] = 32;
 		
-		fileReader = fopen(filePath, "r");
+		if(fileSize % BLOCK_SIZE != 0){
+				padding = (fileSize/BLOCK_SIZE+1)*BLOCK_SIZE - fileSize;
+				for(long i = fileSize;i<fileSize+padding;i++)	// padding last block with white spaces
+						buffer[i] = 32;
+		}
+		
 		fread(buffer, 1, fileSize, fileReader);
 		fclose(fileReader);
 
@@ -275,4 +268,5 @@ void cryptographicMotor(){
 		fileReader = fopen(outputName, "w");
 		fwrite(buffer, 1, fileSize+padding, fileReader);
 		fclose(fileReader);
+		free(buffer);
 }
