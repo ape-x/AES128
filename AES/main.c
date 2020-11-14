@@ -183,23 +183,21 @@ void decryptBlock(uint8_t *state, uint8_t* encryption_key){
 }
 
 void encryption(uint8_t *text, uint8_t* encryption_key, long bytes){
-		uint8_t* blockCounter;
-		long blocks = bytes/BLOCK_SIZE;
+    long blocks = bytes/BLOCK_SIZE;
     keyExpansion(encryption_key);
-    for(int i=0;i<blocks;i++){
-        blockCounter=&text[i*BLOCK_SIZE];
-        encryptBlock(blockCounter, encryption_key);
-    }
+    
+    for(int i=0;i<blocks;i++)
+        encryptBlock(&text[i*BLOCK_SIZE], encryption_key);
+    
 }
 
 void decryption(uint8_t *text, uint8_t* encryption_key, long bytes){
-		uint8_t* blockCounter;
-		long blocks = bytes/BLOCK_SIZE;
+    long blocks = bytes/BLOCK_SIZE;
     keyExpansion(encryption_key);
-		for(int i=0;i<blocks;i++){
-        blockCounter=&text[i*BLOCK_SIZE];
-        decryptBlock(blockCounter, encryption_key);
-    }
+	
+    for(int i=0;i<blocks;i++)
+        decryptBlock(&text[i*BLOCK_SIZE], encryption_key);
+    
 }
 
 FILE* searchForFilePlus(char* path, char* searchedItem){
@@ -234,8 +232,8 @@ void cryptographicMotor(){
 		if(functionality != 1 && functionality != 2)
 				return;
 		
-		if((fileReader = searchForFilePlus(filePath, "file ")) == NULL || // check if files exist
-			 (keyReader = searchForFilePlus(keyPath, "key ")) == NULL){
+		if(!(fileReader = searchForFilePlus(filePath, "file ")) || // check if files exist
+           !(keyReader = searchForFilePlus(keyPath, "key "))){
 				printf("\nFile does not exist or could not be opened");
 				return;
 		}
