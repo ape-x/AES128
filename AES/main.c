@@ -9,53 +9,64 @@
 
 #include "LookUpTables.h"
 #include "AES128.h"
+#include "CSHA512.h"
 
 enum ModesOfOperation {
     ECB = 1,
-    CBC = 2
+    CBC = 2,
 };
 
-uint8_t IV[KEY_SIZE];
-
 uint8_t* derivationProcess(uint8_t* array){
-    uint8_t *alternativeArray = (uint8_t*)malloc(KEY_SIZE*sizeof(uint8_t));
+    uint8_t *derivedArray = (uint8_t*)malloc(KEY_SIZE*sizeof(uint8_t));
     
-    memcpy(alternativeArray, array, KEY_SIZE);
+    memcpy(derivedArray, array, KEY_SIZE);
     
-    shiftRows(alternativeArray);
-    mixColumns(alternativeArray);
-    subBytes(alternativeArray);
+    shiftRows(derivedArray);
+    mixColumns(derivedArray);
+    subBytes(derivedArray);
     
     for(int i=0;i<KEY_SIZE;i++)
-        alternativeArray[i]^=array[i];
+        derivedArray[i]^=array[i];
     
-    encryptBlock(alternativeArray, array);
+    encryptBlock(derivedArray, array);
    
-    return alternativeArray;
+    return derivedArray;
 }
  
- void generateInitializationVector(uint8_t* key, uint8_t* state, uint8_t* salt){ // We take advantage of the substitution-permutation network used in AES to perform an IV generation using its avalanche-effect
+ uint8_t* generateInitializationVector(uint8_t* key, uint8_t* state, uint8_t* salt){ // We take advantage of the substitution-permutation network used in AES to perform an IV generation using its avalanche-effect
      uint8_t *derivedKey = derivationProcess(key);
      uint8_t *derivedState = derivationProcess(state);
-     uint8_t initializationVector[KEY_SIZE];
+     uint8_t *IV = (uint8_t*)malloc(KEY_SIZE*sizeof(uint8_t));
      
      encryptBlock(derivedState, derivedKey);
      encryptBlock(derivedKey, salt);
      
      for(int i=0;i<KEY_SIZE;i++)
-        initializationVector[i] = derivedKey[i] ^ derivedState[i] ^ salt[i];
+        IV[i] = derivedKey[i] ^ derivedState[i] ^ salt[i];
     
-     memcpy(IV, initializationVector, KEY_SIZE*sizeof(uint8_t));
      free(derivedKey);
      free(derivedState);
      
+     return IV;
  }
 
  void encryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
      long blocks = bytes/BLOCK_SIZE;
      uint8_t counter = 0;
-     uint8_t salt[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
-     generateInitializationVector(encryption_key, text, salt);
+     uint8_t salt[BLOCK_SIZE];
+     uint8_t *IV;
+
+     memcpy(salt, encryption_key, 16);
+     hashcomputation((char*)salt);
+     
+     for(int i=0;i<8;i++){
+        salt[i] = (uint8_t)H[i];
+        salt[i+8] = (uint8_t)H[i]^encryption_key[i];
+     }
+
+     cleanMessageDigest();
+     
+     IV = generateInitializationVector(encryption_key, text, salt);
      
      keyExpansion(encryption_key);
      addRoundKey(text, IV);
@@ -72,9 +83,10 @@ uint8_t* derivationProcess(uint8_t* array){
  }
 
 void decryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
-    long blocks = bytes/BLOCK_SIZE;
-    keyExpansion(encryption_key);
     uint8_t counter = 0;
+    long blocks = bytes/BLOCK_SIZE;
+    uint8_t IV[KEY_SIZE];
+    keyExpansion(encryption_key);
     
     for(long i = bytes-2*BLOCK_SIZE;i<bytes-BLOCK_SIZE;i++,counter++)
         IV[counter] = text[i];
@@ -205,14 +217,12 @@ int main(){
     
     chdir("/Users/apex/Documents/AES128-ECB");
     cryptographicCoat();
-    
-    for(int i=0;i<16;i++)
-        printf("%x ", IV[i] & 0xff);
-    printf("\n");
+   
 }
 /*
  
- 
+ 57 35 8e ca 24 78 27 ae 36 57 ed ae 41 1e 40 c6
+
  
  
  */
