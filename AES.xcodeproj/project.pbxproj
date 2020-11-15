@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7A64AA19255F5FC800345058 /* ModesOfOperation.c in Sources */ = {isa = PBXBuildFile; fileRef = 7A64AA18255F5FC800345058 /* ModesOfOperation.c */; };
 		7A64AA1D255F61E900345058 /* AES128.c in Sources */ = {isa = PBXBuildFile; fileRef = 7A64AA1C255F61E900345058 /* AES128.c */; };
 		B845BAD5251B5FF60015AD84 /* LookUpTables.c in Sources */ = {isa = PBXBuildFile; fileRef = B845BAD4251B5FF60015AD84 /* LookUpTables.c */; };
 		B8F1E23D2515613200F2D50E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = B8F1E23C2515613200F2D50E /* main.c */; };
@@ -26,8 +25,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		7A64AA17255F5FC800345058 /* ModesOfOperation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ModesOfOperation.h; sourceTree = "<group>"; };
-		7A64AA18255F5FC800345058 /* ModesOfOperation.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ModesOfOperation.c; sourceTree = "<group>"; };
 		7A64AA1B255F61E900345058 /* AES128.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AES128.h; sourceTree = "<group>"; };
 		7A64AA1C255F61E900345058 /* AES128.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = AES128.c; sourceTree = "<group>"; };
 		B845BAD3251B5FF60015AD84 /* LookUpTables.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LookUpTables.h; sourceTree = "<group>"; };
@@ -71,8 +68,6 @@
 				B8F1E2442515614600F2D50E /* README */,
 				B845BAD3251B5FF60015AD84 /* LookUpTables.h */,
 				B845BAD4251B5FF60015AD84 /* LookUpTables.c */,
-				7A64AA17255F5FC800345058 /* ModesOfOperation.h */,
-				7A64AA18255F5FC800345058 /* ModesOfOperation.c */,
 				7A64AA1B255F61E900345058 /* AES128.h */,
 				7A64AA1C255F61E900345058 /* AES128.c */,
 			);
@@ -135,7 +130,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7A64AA19255F5FC800345058 /* ModesOfOperation.c in Sources */,
 				7A64AA1D255F61E900345058 /* AES128.c in Sources */,
 				B845BAD5251B5FF60015AD84 /* LookUpTables.c in Sources */,
 				B8F1E23D2515613200F2D50E /* main.c in Sources */,
@@ -185,7 +179,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = 3;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",

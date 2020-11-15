@@ -7,6 +7,8 @@
 
 #include "AES128.h"
 
+//This file contains the raw implementation of AES, without any auxiliary functionality or data.
+
 #define BLOCK_SIZE 16 // 128 bit blocks
 #define KEY_SIZE 16 // 128 bit-long key
 
@@ -26,7 +28,7 @@ uint8_t rcon[10][4] =
     0x36,    0,    0,    0
 };
 
-inline static void subBytes(uint8_t* state){
+inline void subBytes(uint8_t* state){
     for(int i=0;i<4;i++){
         state[i*4] = sBox[state[i*4]];
         state[i*4+1] = sBox[state[i*4+1]];
@@ -35,7 +37,7 @@ inline static void subBytes(uint8_t* state){
     }
 }
 
-inline static void invSubBytes(uint8_t* state){
+inline  void invSubBytes(uint8_t* state){
     for(int i=0;i<4;i++){
         state[i*4] = inv_sBox[state[i*4]];
         state[i*4+1] = inv_sBox[state[i*4+1]];
@@ -45,7 +47,7 @@ inline static void invSubBytes(uint8_t* state){
 }
 
 
-inline static void shiftRows(uint8_t* state){ // Looks like crap but it's faster than a crab
+inline  void shiftRows(uint8_t* state){ // Looks like crap but it's faster than a crab
     uint8_t swap;
     swap = state[4];
     state[4] = state[5];
@@ -62,7 +64,7 @@ inline static void shiftRows(uint8_t* state){ // Looks like crap but it's faster
 }
 
 
-inline static void invShiftRows(uint8_t* state){
+inline  void invShiftRows(uint8_t* state){
     uint8_t swap;
     swap = state[7];
     state[7] = state[6];
@@ -78,7 +80,7 @@ inline static void invShiftRows(uint8_t* state){
     (void)(state[9]^=state[11]), (void)(state[11]^=state[9]), state[9]^=state[11];
 }
 
-inline static void mixColumns(uint8_t* state){
+inline  void mixColumns(uint8_t* state){
     uint8_t s[4];
     for(int i=0;i<4;i++){
        s[0] = (mul2[state[i]] ^ mul3[state[i+4]] ^ state[i+8] ^ state[i+12]);
@@ -92,7 +94,7 @@ inline static void mixColumns(uint8_t* state){
     }
 }
 
-inline static void invMixColumns(uint8_t* state){
+inline void invMixColumns(uint8_t* state){
     uint8_t s[4];
     for(int i=0;i<4;i++){
     s[0] = mul_14[state[i]] ^ mul_11[state[i+4]] ^ mul_13[state[i+8]] ^ mul_9[state[i+12]];
@@ -106,7 +108,7 @@ inline static void invMixColumns(uint8_t* state){
     }
 }
 
- inline static void addRoundKey(uint8_t* state, uint8_t* roundKey){
+ inline void addRoundKey(uint8_t* state, uint8_t* roundKey){
     for(int i=0;i<4;i++){
         state[i*4]^=roundKey[i*4];
         state[i*4+1]^=roundKey[i*4+1];
@@ -156,7 +158,7 @@ void encryptBlock(uint8_t* state, uint8_t* encryption_key){
      }
      subBytes(state);
      shiftRows(state);
-    addRoundKey(state, expandedKey[9]);
+    addRoundKey(state, &expandedKey[9]);
 }
 
 void decryptBlock(uint8_t *state, uint8_t* encryption_key){

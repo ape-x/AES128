@@ -24,13 +24,13 @@
 extern uint8_t expandedKey[10][KEY_SIZE];
 extern uint8_t rcon[10][4];
 
-inline static void subBytes(uint8_t* state);
-inline static void invSubBytes(uint8_t* state);
-inline static void shiftRows(uint8_t* state);
-inline static void invShiftRows(uint8_t* state);
-inline static void mixColumns(uint8_t* state);
-inline static void invMixColumns(uint8_t* state);
-inline static void addRoundKey(uint8_t* state, uint8_t* roundKey);
+void subBytes(uint8_t* state);
+void invSubBytes(uint8_t* state);
+void shiftRows(uint8_t* state);
+void invShiftRows(uint8_t* state);
+void mixColumns(uint8_t* state);
+void invMixColumns(uint8_t* state);
+void addRoundKey(uint8_t* state, uint8_t* roundKey);
 void keySchedule(uint8_t* key, int round);
 void keyExpansion(uint8_t* key);
 void encryptBlock(uint8_t* state, uint8_t* encryption_key);
