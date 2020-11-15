@@ -213,17 +213,3 @@ void cryptographicCoat(){
 		fclose(fileReader);
 		free(buffer);
 }
-
-int main(){
-    
-    chdir("/Users/apex/Documents/AES128-ECB");
-    cryptographicCoat();
-   
-}
-/*
- 
- 57 35 8e ca 24 78 27 ae 36 57 ed ae 41 1e 40 c6
-
- 
- 
- */
