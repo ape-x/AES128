@@ -79,7 +79,8 @@ uint8_t* derivationProcess(uint8_t* array){
      
      for(long c = bytes-16;c<bytes;c++,counter++)
         text[c] = IV[counter];
-
+     
+     free(IV);
  }
 
 void decryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
