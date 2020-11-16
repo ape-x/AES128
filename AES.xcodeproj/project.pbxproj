@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		7A2A8813256178CB0023CBFE /* CSHA512.c in Sources */ = {isa = PBXBuildFile; fileRef = 7A2A8812256178CB0023CBFE /* CSHA512.c */; };
+		7A2A882425629F7A0023CBFE /* PRNG.c in Sources */ = {isa = PBXBuildFile; fileRef = 7A2A882325629F7A0023CBFE /* PRNG.c */; };
 		7A64AA1D255F61E900345058 /* AES128.c in Sources */ = {isa = PBXBuildFile; fileRef = 7A64AA1C255F61E900345058 /* AES128.c */; };
 		B845BAD5251B5FF60015AD84 /* LookUpTables.c in Sources */ = {isa = PBXBuildFile; fileRef = B845BAD4251B5FF60015AD84 /* LookUpTables.c */; };
 		B8F1E23D2515613200F2D50E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = B8F1E23C2515613200F2D50E /* main.c */; };
@@ -28,6 +29,8 @@
 /* Begin PBXFileReference section */
 		7A2A8811256178CB0023CBFE /* CSHA512.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CSHA512.h; sourceTree = "<group>"; };
 		7A2A8812256178CB0023CBFE /* CSHA512.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = CSHA512.c; sourceTree = "<group>"; };
+		7A2A882225629F7A0023CBFE /* PRNG.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PRNG.h; sourceTree = "<group>"; };
+		7A2A882325629F7A0023CBFE /* PRNG.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = PRNG.c; sourceTree = "<group>"; };
 		7A64AA1B255F61E900345058 /* AES128.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AES128.h; sourceTree = "<group>"; };
 		7A64AA1C255F61E900345058 /* AES128.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = AES128.c; sourceTree = "<group>"; };
 		B845BAD3251B5FF60015AD84 /* LookUpTables.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LookUpTables.h; sourceTree = "<group>"; };
@@ -83,6 +86,8 @@
 				B845BAD4251B5FF60015AD84 /* LookUpTables.c */,
 				7A64AA1B255F61E900345058 /* AES128.h */,
 				7A64AA1C255F61E900345058 /* AES128.c */,
+				7A2A882225629F7A0023CBFE /* PRNG.h */,
+				7A2A882325629F7A0023CBFE /* PRNG.c */,
 			);
 			path = AES;
 			sourceTree = "<group>";
@@ -143,6 +148,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7A2A882425629F7A0023CBFE /* PRNG.c in Sources */,
 				7A64AA1D255F61E900345058 /* AES128.c in Sources */,
 				7A2A8813256178CB0023CBFE /* CSHA512.c in Sources */,
 				B845BAD5251B5FF60015AD84 /* LookUpTables.c in Sources */,

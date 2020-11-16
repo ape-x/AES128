@@ -16,6 +16,12 @@ enum ModesOfOperation {
     CBC = 2,
 };
 
+
+
+// *        *       *       *       *       *       *       *       *       *       *       *       *       *       *       *
+
+
+
 uint8_t* derivationProcess(uint8_t* array){
     uint8_t *derivedArray = (uint8_t*)malloc(KEY_SIZE*sizeof(uint8_t));
     
@@ -103,6 +109,23 @@ void decryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
 }
 
 
+// *        *       *       *       *       *       *       *       *       *       *       *       *       *       *       *
+
+
+
+void encryptionCTR(uint8_t *text, uint8_t *encryption_key, long bytes){
+    
+}
+
+void decryptionCTR(uint8_t *text, uint8_t *encryption_key, long bytes){
+    
+}
+
+
+// *        *       *       *       *       *       *       *       *       *       *       *       *       *       *       *
+
+
+
  void encryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
          long blocks = bytes/BLOCK_SIZE;
         keyExpansion(encryption_key);
@@ -112,13 +135,19 @@ void decryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
      
  }
 
- void decryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
-         long blocks = bytes/BLOCK_SIZE;
-         keyExpansion(encryption_key);
-        
-    for(int i=0;i<blocks;i++)
-         decryptBlock(&text[i*BLOCK_SIZE], encryption_key);
- }
+
+void decryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
+        long blocks = bytes/BLOCK_SIZE;
+        keyExpansion(encryption_key);
+       
+   for(int i=0;i<blocks;i++)
+        decryptBlock(&text[i*BLOCK_SIZE], encryption_key);
+}
+
+
+
+// *        *       *       *       *       *       *       *       *       *       *       *       *       *       *       *
+
 
 
 FILE* searchForFilePlus(char* path, char* searchedItem){
@@ -197,12 +226,7 @@ void cryptographicCoat(){
 		fread(buffer, 1, fileSize, fileReader);
 		fclose(fileReader);
 
-        clock_t t;
-        t = clock();
         controller[functionality-1][modeOfOperation-1](buffer, key, fileSize+padding);
-        t = clock() - t;
-        double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds
-        printf("\nTime %f\nSize %ld", time_taken, ((fileSize+padding)/1024)/1024);
     
 		printf("\nEnter name of output file ");
 		scanf("%s", &outputName);
