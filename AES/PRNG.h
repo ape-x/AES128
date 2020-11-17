@@ -13,5 +13,6 @@
 #include "CSHA512.h"
 
 uint8_t* PRNG(char* seed);
+uint8_t* PRNGLONG(char* seed);
 
 #endif /* PRNG_h */
