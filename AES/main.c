@@ -22,59 +22,10 @@ enum ModesOfOperation {
 
 // *        *       *       *       *       *       *       *       *       *       *       *       *       *       *       *
 
-
-
-uint8_t* derivationProcess(uint8_t* array){
-    uint8_t *derivedArray = (uint8_t*)malloc(KEY_SIZE*sizeof(uint8_t));
-    
-    memcpy(derivedArray, array, KEY_SIZE);
-    
-    shiftRows(derivedArray);
-    mixColumns(derivedArray);
-    subBytes(derivedArray);
-    
-    for(int i=0;i<KEY_SIZE;i++)
-        derivedArray[i]^=array[i];
-    
-    encryptBlock(derivedArray, array);
-   
-    return derivedArray;
-}
- 
- uint8_t* generateInitializationVector(uint8_t* key, uint8_t* state, uint8_t* salt){ // We take advantage of the substitution-permutation network used in AES to perform an IV generation using its avalanche-effect
-     uint8_t *derivedKey = derivationProcess(key);
-     uint8_t *derivedState = derivationProcess(state);
-     uint8_t *IV = (uint8_t*)malloc(KEY_SIZE*sizeof(uint8_t));
-     
-     encryptBlock(derivedState, derivedKey);
-     encryptBlock(derivedKey, salt);
-     
-     for(int i=0;i<KEY_SIZE;i++)
-        IV[i] = derivedKey[i] ^ derivedState[i] ^ salt[i];
-    
-     free(derivedKey);
-     free(derivedState);
-     
-     return IV;
- }
-
  void encryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
      long blocks = bytes/BLOCK_SIZE;
      uint8_t counter = 0;
-     uint8_t salt[BLOCK_SIZE];
-     uint8_t *IV;
-
-     memcpy(salt, encryption_key, 16);
-     hashcomputation((char*)salt);
-     
-     for(int i=0;i<8;i++){
-        salt[i] = (uint8_t)H[i];
-        salt[i+8] = (uint8_t)H[i]^encryption_key[i];
-     }
-
-     cleanMessageDigest();
-     
-     IV = generateInitializationVector(encryption_key, text, salt);
+     uint8_t *IV = PRNG((char*)encryption_key);
      
      keyExpansion(encryption_key);
      addRoundKey(text, IV);
