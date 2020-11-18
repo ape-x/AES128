@@ -20,9 +20,25 @@ enum ModesOfOperation {
 };
 
 
-// *        *       *       *       *       *       *       *       *       *       *       *       *       *       *       *
+void encryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
+        long blocks = bytes/BLOCK_SIZE;
+       keyExpansion(encryption_key);
+    
+    for(int i=0;i<blocks;i++)
+        encryptBlock(&text[i*BLOCK_SIZE], encryption_key);
+    
+}
 
- void encryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
+void decryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
+       long blocks = bytes/BLOCK_SIZE;
+       keyExpansion(encryption_key);
+      
+  for(int i=0;i<blocks;i++)
+       decryptBlock(&text[i*BLOCK_SIZE], encryption_key);
+}
+
+
+void encryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
      long blocks = bytes/BLOCK_SIZE;
      uint8_t counter = 0;
      uint8_t *IV = PRNG((char*)encryption_key);
@@ -61,8 +77,6 @@ void decryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
     addRoundKey(&text[bytes-2*BLOCK_SIZE], &text[bytes-2*BLOCK_SIZE]); // XOR IV with itself to set its content to 0
 }
 
-
-// *        *       *       *       *       *       *       *       *       *       *       *       *       *       *       *
 
 
 void encryptionOFB(uint8_t *text, uint8_t *encryption_key, long bytes){
@@ -106,29 +120,10 @@ void decryptionOFB(uint8_t *text, uint8_t *encryption_key, long bytes){
     addRoundKey(&text[bytes-1*BLOCK_SIZE], &text[bytes-1*BLOCK_SIZE]);
 }
 
- void encryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
-         long blocks = bytes/BLOCK_SIZE;
-        keyExpansion(encryption_key);
-     
-     for(int i=0;i<blocks;i++)
-         encryptBlock(&text[i*BLOCK_SIZE], encryption_key);
-     
- }
-
-
-void decryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
-        long blocks = bytes/BLOCK_SIZE;
-        keyExpansion(encryption_key);
-       
-   for(int i=0;i<blocks;i++)
-        decryptBlock(&text[i*BLOCK_SIZE], encryption_key);
+void print(uint8_t array[BLOCK_SIZE]){
+    for(int i=0;i<BLOCK_SIZE;i++)
+        printf("%x ", array[i] & 0xff);
 }
-
-
-
-// *        *       *       *       *       *       *       *       *       *       *       *       *       *       *       *
-
-
 
 FILE* searchForFilePlus(char* path, char* searchedItem){
 		printf("\nEnter path to %s\t", searchedItem);
@@ -161,7 +156,7 @@ void cryptographicCoat(){
 		char filePath[PATH_MAX];
 		char keyPath[PATH_MAX];
 		long fileSize;
-        void (*controller[3][3])(uint8_t*, uint8_t*, long) = { {encryptionECB, encryptionCBC, encryptionOFB }, { decryptionECB, decryptionCBC, decryptionOFB }  };
+        void (*controller[4][4])(uint8_t*, uint8_t*, long) = { {encryptionECB, encryptionCBC, encryptionOFB }, { decryptionECB, decryptionCBC, decryptionOFB}  };
         
     
 		printf("\nSelect functionality\n1 - Encryption\n2 - Decryption\n");
