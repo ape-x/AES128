@@ -17,6 +17,7 @@ enum ModesOfOperation {
     ECB = 1,
     CBC = 2,
     OFB = 3,
+    CTR = 4
 };
 
 
@@ -125,6 +126,41 @@ void print(uint8_t array[BLOCK_SIZE]){
         printf("%x ", array[i] & 0xff);
 }
 
+inline static void incrementNonce(uint8_t *nonce){
+    for(int i=0;i<16;i++)
+        nonce[i]++;
+}
+
+void encryptionCTR(uint8_t *text, uint8_t *encryption_key, long bytes){
+    uint8_t *nonce = PRNG((char*)encryption_key);
+    uint8_t _nonce[KEY_SIZE];
+    long blocks = bytes/BLOCK_SIZE;
+
+    for(long i = 0;i<blocks;i++){
+        memcpy(_nonce, nonce, KEY_SIZE);
+        encryptBlock(_nonce, encryption_key);
+        addRoundKey(&text[i*BLOCK_SIZE], _nonce);
+        incrementNonce(nonce);
+
+    }
+}
+
+void decryptionCTR(uint8_t *text, uint8_t *encryption_key, long bytes){
+    uint8_t *nonce = PRNG((char*)encryption_key);
+    uint8_t _nonce[KEY_SIZE];
+    long blocks = bytes/BLOCK_SIZE;
+
+    for(long i = 0;i<blocks;i++){
+        memcpy(_nonce, nonce, KEY_SIZE);
+        encryptBlock(_nonce, encryption_key);
+        addRoundKey(&text[i*BLOCK_SIZE], _nonce);
+        incrementNonce(nonce);
+    }
+    
+}
+
+
+
 FILE* searchForFilePlus(char* path, char* searchedItem){
 		printf("\nEnter path to %s\t", searchedItem);
 		scanf("%s", path);
@@ -156,7 +192,7 @@ void cryptographicCoat(){
 		char filePath[PATH_MAX];
 		char keyPath[PATH_MAX];
 		long fileSize;
-        void (*controller[4][4])(uint8_t*, uint8_t*, long) = { {encryptionECB, encryptionCBC, encryptionOFB }, { decryptionECB, decryptionCBC, decryptionOFB}  };
+        void (*controller[4][4])(uint8_t*, uint8_t*, long) = { {encryptionECB, encryptionCBC, encryptionOFB, encryptionCTR }, { decryptionECB, decryptionCBC, decryptionOFB, decryptionCTR }  };
         
     
 		printf("\nSelect functionality\n1 - Encryption\n2 - Decryption\n");
@@ -165,7 +201,7 @@ void cryptographicCoat(){
         if(functionality != 1 && functionality != 2)
                 return;
     
-        printf("\nSelect mode of operation\n1 - ECB\n2 - CBC\n3 - OFB\n");
+        printf("\nSelect mode of operation\n1 - ECB\n2 - CBC\n3 - OFB\n4 - CTR\n");
         scanf("%d", &modeOfOperation);
     
         if(modeOfOperation<1 && modeOfOperation>3)
@@ -199,9 +235,9 @@ void cryptographicCoat(){
 
 		fread(buffer, 1, fileSize, fileReader);
 		fclose(fileReader);
-    
-        controller[functionality-1][modeOfOperation-1](buffer, key, fileSize+padding);
-    
+
+    controller[functionality-1][modeOfOperation-1](buffer, key, fileSize+padding);
+ 
         printf("\nEnter name of output file ");
 		scanf("%s", &outputName);
 		

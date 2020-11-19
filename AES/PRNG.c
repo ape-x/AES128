@@ -86,25 +86,29 @@ void LFSR(uint8_t* seed){
 }
 
 uint8_t* PRNG(char* seed){
-    uint8_t counter = 0;
     uint8_t* generatedArray = (uint8_t*)malloc(16*sizeof(uint8_t));
-    uint8_t distributedInt[8][8];
+    uint8_t _distributedInt[4][16];
+    uint8_t _seed[16];
     uint64_t _H[8];
     
-    hashcomputation(seed);
+    memcpy(_seed, seed , 16);
+    hashcomputation(_seed);
     memcpy(_H, H, 8*sizeof(uint64_t));
+   
     cleanMessageDigest();
+    for(int i=0;i<4;i++){
+        distributeTo8(_H[i], &_distributedInt[i][0]);
+        distributeTo8(_H[i+4], &_distributedInt[i][8]);
+        LFSR(_distributedInt[i]);
+    }
+   
 
-    for(int i=0;i<8;i++){
-        distributeTo8(_H[i], distributedInt[i]);
-        LFSR(distributedInt[i]);
+    for(int i=0;i<4;i++){
+        generatedArray[i] = logicalFunction(&_distributedInt[i][0]);
+        generatedArray[i+4] = logicalFunction(&_distributedInt[i][4]);
+        generatedArray[i+8] = logicalFunction(&_distributedInt[i][8]);
+        generatedArray[i+12] = logicalFunction(&_distributedInt[i][12]);
     }
-    
-    for(int i=0;i<8;i++){
-        generatedArray[i] = logicalFunction(&distributedInt[counter][0]);
-        generatedArray[i+8] = logicalFunction(&distributedInt[counter][4]);
-        counter++;
-    }
-    
+  
     return generatedArray;
 }
