@@ -17,9 +17,15 @@ enum ModesOfOperation {
     ECB = 1,
     CBC = 2,
     OFB = 3,
-    CTR = 4
+    CTR = 4,
+    CCM = 5
 };
 
+void cleanKeyExpansion(){
+    for(int i=0;i<10;i++)
+        for(int j=0;j<KEY_SIZE;j++)
+            expandedKey[i][j] = 0;
+}
 
 void encryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
         long blocks = bytes/BLOCK_SIZE;
@@ -28,6 +34,7 @@ void encryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
     for(int i=0;i<blocks;i++)
         encryptBlock(&text[i*BLOCK_SIZE], encryption_key);
     
+    cleanKeyExpansion();
 }
 
 void decryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
@@ -36,6 +43,8 @@ void decryptionECB(uint8_t *text, uint8_t* encryption_key, long bytes){
       
   for(int i=0;i<blocks;i++)
        decryptBlock(&text[i*BLOCK_SIZE], encryption_key);
+    
+    cleanKeyExpansion();
 }
 
 
@@ -57,6 +66,7 @@ void encryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
         text[c] = IV[counter];
      
      free(IV);
+    cleanKeyExpansion();
  }
 
 void decryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
@@ -76,6 +86,7 @@ void decryptionCBC(uint8_t* text, uint8_t* encryption_key, long bytes){
     decryptBlock(text, encryption_key);
     addRoundKey(text, IV);
     addRoundKey(&text[bytes-2*BLOCK_SIZE], &text[bytes-2*BLOCK_SIZE]); // XOR IV with itself to set its content to 0
+    cleanKeyExpansion();
 }
 
 
@@ -100,6 +111,7 @@ void encryptionOFB(uint8_t *text, uint8_t *encryption_key, long bytes){
        text[c] = auxIV[counter];
 
     free(IV);
+    cleanKeyExpansion();
 }
 
 void decryptionOFB(uint8_t *text, uint8_t *encryption_key, long bytes){
@@ -119,12 +131,9 @@ void decryptionOFB(uint8_t *text, uint8_t *encryption_key, long bytes){
     }
     
     addRoundKey(&text[bytes-1*BLOCK_SIZE], &text[bytes-1*BLOCK_SIZE]);
+    cleanKeyExpansion();
 }
 
-void print(uint8_t array[BLOCK_SIZE]){
-    for(int i=0;i<BLOCK_SIZE;i++)
-        printf("%x ", array[i] & 0xff);
-}
 
 inline static void incrementNonce(uint8_t *nonce){
     for(int i=0;i<16;i++)
@@ -135,28 +144,76 @@ void encryptionCTR(uint8_t *text, uint8_t *encryption_key, long bytes){
     uint8_t *nonce = PRNG((char*)encryption_key);
     uint8_t _nonce[KEY_SIZE];
     long blocks = bytes/BLOCK_SIZE;
-
+    
+    keyExpansion(encryption_key);
+    
     for(long i = 0;i<blocks;i++){
         memcpy(_nonce, nonce, KEY_SIZE);
         encryptBlock(_nonce, encryption_key);
         addRoundKey(&text[i*BLOCK_SIZE], _nonce);
         incrementNonce(nonce);
-
     }
+
+    free(nonce);
+    cleanKeyExpansion();
 }
 
-void decryptionCTR(uint8_t *text, uint8_t *encryption_key, long bytes){
-    uint8_t *nonce = PRNG((char*)encryption_key);
-    uint8_t _nonce[KEY_SIZE];
-    long blocks = bytes/BLOCK_SIZE;
 
-    for(long i = 0;i<blocks;i++){
-        memcpy(_nonce, nonce, KEY_SIZE);
-        encryptBlock(_nonce, encryption_key);
-        addRoundKey(&text[i*BLOCK_SIZE], _nonce);
-        incrementNonce(nonce);
-    }
+void encryptionCCM(uint8_t *text, uint8_t *encryption_key, long bytes){
+    uint8_t counter = 0;
+    long blocks = bytes/BLOCK_SIZE;
+    uint8_t MAC[BLOCK_SIZE];
+    uint8_t temp[BLOCK_SIZE];
     
+    memcpy(temp, text, BLOCK_SIZE);
+    keyExpansion(encryption_key); // CBC encryption for MAC
+    
+    encryptBlock(temp, encryption_key);
+    
+    for(long i=1;i<blocks-1;i++){
+        memcpy(MAC, &text[i*BLOCK_SIZE], BLOCK_SIZE);
+        addRoundKey(MAC, temp);
+        encryptBlock(MAC, encryption_key);
+        memcpy(temp, MAC, BLOCK_SIZE);
+    }
+
+    encryptionCTR(text, encryption_key, bytes-1);
+    
+    for(long i=bytes-BLOCK_SIZE;i<bytes;i++,counter++)
+        text[i] = MAC[counter]; // Adding MAC which will later be verified upon decryption
+
+}
+
+
+void decryptionCCM(uint8_t *text, uint8_t *encryption_key, long bytes){
+    uint8_t counter = 0;
+    long blocks = bytes/BLOCK_SIZE;
+    uint8_t MAC[BLOCK_SIZE];
+    uint8_t temp[BLOCK_SIZE];
+
+    encryptionCTR(text, encryption_key, bytes-2);
+    
+    memcpy(temp, text, BLOCK_SIZE);
+    keyExpansion(encryption_key); // CBC encryption for MAC
+    
+    encryptBlock(temp, encryption_key);
+    
+    for(long i=1;i<blocks-1;i++){
+        memcpy(MAC, &text[i*BLOCK_SIZE], BLOCK_SIZE);
+        addRoundKey(MAC, temp);
+        encryptBlock(MAC, encryption_key);
+        memcpy(temp, MAC, BLOCK_SIZE);
+    }
+
+    
+    counter = 0;
+    for(long i=bytes-BLOCK_SIZE; i<bytes;i++,counter++) // Checking MAC to see if message has been tainted
+        if(MAC[counter] != text[i]){
+            printf("\nMAC does not match\n");
+            return;
+        }else{
+            text[i] = 0;
+        }
 }
 
 
@@ -192,7 +249,7 @@ void cryptographicCoat(){
 		char filePath[PATH_MAX];
 		char keyPath[PATH_MAX];
 		long fileSize;
-        void (*controller[4][4])(uint8_t*, uint8_t*, long) = { {encryptionECB, encryptionCBC, encryptionOFB, encryptionCTR }, { decryptionECB, decryptionCBC, decryptionOFB, decryptionCTR }  };
+        void (*controller[5][5])(uint8_t*, uint8_t*, long) = { {encryptionECB, encryptionCBC, encryptionOFB, encryptionCTR, encryptionCCM }, { decryptionECB, decryptionCBC, decryptionOFB, encryptionCTR, decryptionCCM }  };
         
     
 		printf("\nSelect functionality\n1 - Encryption\n2 - Decryption\n");
@@ -201,7 +258,7 @@ void cryptographicCoat(){
         if(functionality != 1 && functionality != 2)
                 return;
     
-        printf("\nSelect mode of operation\n1 - ECB\n2 - CBC\n3 - OFB\n4 - CTR\n");
+        printf("\nSelect mode of operation\n1 - ECB\n2 - CBC\n3 - OFB\n4 - CTR\n5 - CCM\n");
         scanf("%d", &modeOfOperation);
     
         if(modeOfOperation<1 && modeOfOperation>3)
@@ -217,9 +274,9 @@ void cryptographicCoat(){
 		fclose(keyReader);
 		fileSize = getFileSize(filePath);
     
-        if(modeOfOperation == CBC || (modeOfOperation == OFB && functionality == 1))  //Checks the mode of operation in order to determine whether or not to write/read the IV of the file
+        if(modeOfOperation == CBC || ((modeOfOperation == OFB || CCM )&& functionality == 1))  //Checks the mode of operation in order to determine whether or not to write/read the IV of the file
                     fileSize+=BLOCK_SIZE;
-
+        
         buffer = (uint8_t*)malloc((fileSize+padding)*sizeof(uint8_t));
 		
 		if(buffer == NULL){
@@ -237,9 +294,9 @@ void cryptographicCoat(){
 		fclose(fileReader);
 
     controller[functionality-1][modeOfOperation-1](buffer, key, fileSize+padding);
- 
-        printf("\nEnter name of output file ");
-		scanf("%s", &outputName);
+    
+    printf("\nEnter name of output file ");
+    scanf("%s", &outputName);
 		
 		fileReader = fopen(outputName, "w");
     
